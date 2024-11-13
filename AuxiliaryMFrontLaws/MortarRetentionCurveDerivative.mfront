@@ -1,0 +1,25 @@
+@Parser MaterialLaw;
+@Material Mortar;
+@Law RetentionCurveDerivative;
+@Author Maxime PIERRE;
+@Date 20/01/2023;
+
+@Description
+{
+  Derivative of the water retention curve of mortar with respect to pore pressure from Van Genuchten model
+}
+
+@Input p, p_0, n, kα;
+p.setGlossaryName("Pressure");
+p_0.setEntryName("AirEntryPressure");
+n.setEntryName("VanGenuchtenExponent");
+kα.setEntryName("HydrationModifier");
+
+@Output ∂S_l∕∂Δp;
+
+@PhysicalBounds p_0 in [0:*[;
+
+@Function
+{
+    ∂S_l∕∂Δp = p > 0 ? 0 : (n-1) / p_0 * pow( 1 + pow(- p / p_0, n) * exp(-n*kα), (1-2*n)/n) * pow(- p / p_0, n-1) * exp(-n*kα) ;
+}

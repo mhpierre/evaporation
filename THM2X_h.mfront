@@ -1,0 +1,241 @@
+@DSL DefaultGenericBehaviour;
+@Behaviour THM2X_h;
+@Author Maxime PIERRE;
+@Date 18/10/2023;
+@Description{
+    Coupled thermo-hydro-poroelasticity with 2 hydration extents (2Xi), time in hours
+}
+
+@MaterialLaw "AuxiliaryMFrontLaws/WaterDensity.mfront" ;
+@MaterialLaw "AuxiliaryMFrontLaws/WaterEntropy.mfront" ;
+@MaterialLaw "AuxiliaryMFrontLaws/MortarRetentionCurve.mfront" ;
+@MaterialLaw "AuxiliaryMFrontLaws/MortarRetentionCurveDerivative.mfront" ;
+
+@StaticVariable real Tref = 293.15;
+@StaticVariable real η_f  = 2.7778e-7; //Pa.h
+
+@ExternalStateVariable stress p_l;
+p_l.setEntryName("LiquidPressure");
+
+@Gradient StrainStensor ε;
+ε.setGlossaryName("Strain");
+
+@Flux StressStensor σ;
+σ.setGlossaryName("Stress");
+
+@Gradient TVector ∇p_l;
+∇p_l.setEntryName("LiquidPressureGradient");
+
+@Flux TVector w;
+w.setEntryName("FluidFlux");
+
+@Gradient TemperatureGradient ∇T;
+∇T.setGlossaryName("TemperatureGradient");
+
+@Flux HeatFlux j;
+j.setGlossaryName("HeatFlux");
+
+@AuxiliaryStateVariable real S;
+S.setEntryName("Entropy");
+
+@AuxiliaryStateVariable real Sₛ;
+Sₛ.setEntryName("SolidEntropy");
+
+@MaterialProperty stress K_s;
+K_s.setEntryName("SolidBulkModulus");
+@MaterialProperty stress E0;
+E0.setEntryName("InitialYoungModulus");
+@MaterialProperty stress E_ξ1;
+E_ξ1.setEntryName("StiffeningModulus1");
+@MaterialProperty stress E_ξ2;
+E_ξ2.setEntryName("StiffeningModulus2");
+@MaterialProperty real ν;
+ν.setGlossaryName("PoissonRatio");
+
+@MaterialProperty real k_L0;
+k_L0.setEntryName("InitialPermeability");
+@MaterialProperty real C_kl ;
+
+
+@MaterialProperty real φ₀_0;
+φ₀_0.setEntryName("PorosityAtZeroHydration");
+
+@MaterialProperty real a1_1;
+@MaterialProperty real a2_1;
+@MaterialProperty real a3_1;
+@MaterialProperty real a1_2;
+@MaterialProperty real a2_2;
+@MaterialProperty real a3_2;
+
+@MaterialProperty thermalconductivity α ;
+α.setGlossaryName("ThermalExpansion");
+@MaterialProperty real Cₑ ;
+Cₑ.setEntryName("SpecificHeatAtConstantStrain");
+@MaterialProperty thermalconductivity k_T ;
+k_T.setGlossaryName("ThermalConductivity");
+
+@MaterialProperty real L_1;
+L_1.setEntryName("LatentHeat_1");
+@MaterialProperty real L_2;
+L_2.setEntryName("LatentHeat_2");
+
+@MaterialProperty stress p_0;
+p_0.setEntryName("VGReferencePressure");
+@MaterialProperty real n_sl ;
+n_sl.setEntryName("VanGenuchtenExponent");
+@MaterialProperty real k_sl1 ;
+@MaterialProperty real k_sl2 ;
+
+
+@MaterialProperty real ξ_max_1;
+ξ_max_1.setEntryName("MaxHydrationExtent_1");
+@MaterialProperty real ξ_max_2;
+ξ_max_2.setEntryName("MaxHydrationExtent_2");
+
+@MaterialProperty real ΔV_s1 ;
+ΔV_s1.setEntryName("MolarVolumeChange_1") ;
+@MaterialProperty real ΔV_s2 ;
+ΔV_s2.setEntryName("MolarVolumeChange_2") ;
+
+
+@AuxiliaryStateVariable real isInit;
+@AuxiliaryStateVariable StressStensor σ0;
+σ0.setEntryName("InitialStress");
+@AuxiliaryStateVariable TVector w0;
+w0.setEntryName("InitialFluidFlux");
+@AuxiliaryStateVariable HeatFlux j0;
+j0.setEntryName("InitialHeatFlux");
+
+@AuxiliaryStateVariable real φ;
+φ.setGlossaryName("Porosity");
+@AuxiliaryStateVariable real φ₀;
+φ₀.setEntryName("InitialPorosity");
+@AuxiliaryStateVariable real φm;
+φm.setEntryName("MechanicalPorosity");
+@AuxiliaryStateVariable real mf;
+mf.setEntryName("FluidMass");
+
+@AuxiliaryStateVariable real E;
+E.setGlossaryName("YoungModulus");
+@AuxiliaryStateVariable real b;
+b.setEntryName("BiotCoefficient");
+
+@AuxiliaryStateVariable real ξ_1;
+ξ_1.setEntryName("HydrationExtent_1");
+@AuxiliaryStateVariable real ξ_2;
+ξ_2.setEntryName("HydrationExtent_2");
+
+@AuxiliaryStateVariable real S_l;
+S_l.setEntryName("SaturationDegree");
+
+@AuxiliaryStateVariable real sf;
+sf.setEntryName("FluidEntropy");
+
+@AuxiliaryStateVariable real k_eff;
+k_eff.setEntryName("EffectivePermeability");
+
+@AuxiliaryStateVariable real k_L;
+k_L.setEntryName("Permeability");
+
+@AuxiliaryStateVariable real R_h;
+R_h.setEntryName("RelativeHumidity");
+
+@LocalVariable massdensity ρ_f;
+ρ_f.setEntryName("FluidDensity");
+
+@LocalVariable real ξ_incr_1;
+ξ_incr_1.setEntryName("Xi_incr_1");
+@LocalVariable real ξ_incr_2;
+ξ_incr_2.setEntryName("Xi_incr_2");
+
+@LocalVariable stress λ;
+@LocalVariable stress μ;
+@LocalVariable stress κ;
+@LocalVariable real Δφ₀;
+@LocalVariable real Δφm;
+
+
+@TangentOperatorBlocks{∂σ∕∂Δp_l, ∂σ∕∂ΔT, ∂σ∕∂Δε, ∂mf∕∂Δp_l, ∂mf∕∂ΔT, ∂mf∕∂Δε, ∂S∕∂Δp_l, ∂S∕∂ΔT, ∂S∕∂Δε, ∂w∕∂ΔT, ∂w∕∂Δp_l, ∂w∕∂Δ∇p_l, ∂j∕∂Δ∇T};
+
+@Integrator{
+  if (isInit == 0){
+      σ = σ0;
+      w = w0;
+      j = j0;
+      k_L = k_L0;
+      φ₀ = φ₀_0;
+      isInit = 1;
+  }
+
+  // Update fluid-related variables
+  ρ_f =  Water_Density( p_l + Δp_l , T + ΔT ) ;
+  sf  =  Water_Entropy( p_l + Δp_l , T + ΔT ) ;
+  R_h = exp((p_l + Δp_l)*18e-3/(1e3*8.31*(T + ΔT)));
+
+  // Hydration extent increments over the time-step
+  ξ_incr_1 = dt * min(1.0, 3.7*pow(R_h, 25)) * a1_1 * (a2_1/ξ_max_1 + ξ_1 )*(ξ_max_1 - ξ_1 ) * exp(-a3_1*ξ_1/ξ_max_1) * exp( - (41550. - 1.843e-5 * (p_l + Δp_l) )/8.31/( T + ΔT) ) ;
+  ξ_1 += ξ_incr_1;
+  ξ_incr_2 = dt * min(1.0, 3.7*pow(R_h, 25)) * a1_2 * (a2_2/ξ_max_2 + ξ_2 )*(ξ_max_2 - ξ_2 ) * exp(-a3_2*ξ_2/ξ_max_2) * exp( - (41550. - 1.843e-5 * (p_l + Δp_l) )/8.31/( T + ΔT) ) ;
+  ξ_2 += ξ_incr_2;
+
+  // Update poroelastic coefficients
+  E = E0 + E_ξ1*ΔV_s1*ξ_1 + E_ξ2*ΔV_s2*ξ_2 ;
+  λ = computeLambda(E, ν);
+  μ = computeMu(E, ν);
+  κ = α ⋅ (2 ⋅ μ + 3 ⋅ λ);
+  b = 1 - (λ+2/3*μ)/K_s ;
+
+  // Retention curve and permeability
+  S_l =  Mortar_RetentionCurve( p_l + Δp_l , p_0, n_sl, k_sl1*ξ_1/ξ_max_1 + k_sl2*ξ_2/ξ_max_2 ) ;
+  k_eff = max(k_L * sqrt(S_l)* pow(1-pow(1- pow(S_l, n_sl/(n_sl-1)), (n_sl-1)/n_sl), 2) , R_h*3e-22);
+
+  //Behaviour
+  Δφ₀ = - ΔV_s1 ⋅ ξ_incr_1 - ΔV_s2 ⋅ ξ_incr_2;
+  φ₀ += Δφ₀;
+  Δφm = b ⋅ trace(Δε) + (b - φ₀)/K_s ⋅ S_l ⋅ Δp_l - 3 ⋅ α ⋅ (b - φ₀) ⋅ ΔT ;
+  φm += Δφm;
+  φ   = φ₀ + φm ;
+
+  σ  +=  λ ⋅ trace(Δε) ⋅ I₂ + 2 ⋅ μ ⋅ Δε - κ ⋅ ΔT ⋅ I₂ - b ⋅ S_l ⋅ Δp_l ⋅ I₂ ;
+
+  mf  = ρ_f ⋅ S_l ⋅ φ ;
+  w   = - k_eff / η_f ⋅ ρ_f ⋅ (∇p_l + Δ∇p_l);
+
+  Sₛ  +=  (1 - φ₀) ⋅ Cₑ / Tref ⋅ ΔT +  κ ⋅ trace(Δε) - 3 ⋅ α ⋅ (b - φ₀) ⋅ S_l ⋅ Δp_l - (L_1 / Tref) ⋅ ξ_incr_1 - (L_2 / Tref) ⋅ ξ_incr_2 ;
+  S   =  Sₛ + sf ⋅ mf ;
+  j  +=  - k_T ⋅ Δ∇T;
+
+  //Auxiliary stuff
+  k_L += log(10)*k_L / C_kl / (1-φ)/(1-φ) * (Δφ₀ + Δφm);
+}
+
+@TangentOperator{
+    // Some derivatives
+    const stress p_ =  (p_l + Δp_l) * 1.e-6 ;
+    const real T_   =  T + ΔT - 293.15 ;
+    const real ∂S_l∕∂Δp_l = Mortar_RetentionCurveDerivative( p_l + Δp_l , p_0, n_sl, k_sl1*ξ_1/ξ_max_1 + k_sl2*ξ_2/ξ_max_2 ) ;
+    const real ∂ρ_f∕∂Δp_l = 1.0e-6 * ( 4.87e-1 - 0.00079 * p_ - 1.82e-3 * T_ - 0.000002244 * p_ * T_ + 0.00001615 * T_ * T_);
+    const real ∂ρ_f∕∂ΔT   = - 2.84e-2 - 1.82e-3 * p_ - 0.009948 * T_ - 0.000001122 * p_ * p_ + 0.00003096 * T_ * T_;
+    const real ∂sf∕∂Δp_l  = 1e-3 * ( -1.91e-5 - 2*9.65e-7 * p_ - 9.9e-6 * T_ + 2*1.972e-8 * p_ * T_ + 2.318e-8 * T_*T_);
+    const real ∂sf∕∂ΔT    = 1000 * (1.53e-2 -9.9e-6*p_ -2*0.00002634*T_ + 1.972e-8*p_*p_ + 2*2.318e-8 *p_*T_ + 3*4.362e-8*T_*T_);
+    const real ∂k_eff∕∂S_l = k_L * ( pow( 1 - pow( 1 - pow( S_l, n_sl/(n_sl-1)), (n_sl-1)/n_sl), 2)/(2.0*sqrt(S_l)) + 2.0 * pow(S_l, n_sl/(n_sl-1)-0.5) * ( 1 - pow( 1 - pow(S_l, n_sl/(n_sl-1)), (n_sl-1)/n_sl) ) * pow( 1 - pow(S_l, n_sl/(n_sl-1)), (n_sl-1)/n_sl) );
+
+    // Tangent operator blocks
+    ∂σ∕∂Δp_l  = -b ⋅ (S_l) ⋅ I₂ ;
+    ∂σ∕∂ΔT    = -κ ⋅ I₂ ;
+    ∂σ∕∂Δε    =  λ ⋅ (I₂ ⊗ I₂) + 2 ⋅ μ ⋅ I₄;
+
+    ∂mf∕∂Δp_l = ∂ρ_f∕∂Δp_l ⋅ S_l ⋅ φ + ∂S_l∕∂Δp_l ⋅ ρ_f ⋅ φ + ρ_f ⋅ S_l ⋅ (b - φ₀)/ K_s ⋅ S_l;
+    ∂mf∕∂ΔT   = - 3 ⋅ α ⋅ ρ_f ⋅ S_l ⋅ (b - φ₀) +  ∂ρ_f∕∂ΔT ⋅ S_l ⋅ φ ;
+    ∂mf∕∂Δε   = ρ_f * S_l ⋅ b ⋅ I₂;
+
+    ∂S∕∂ΔT    =  (1 - φ₀) ⋅ Cₑ / Tref + sf ⋅ ∂mf∕∂ΔT + ∂sf∕∂ΔT ⋅ mf;
+    ∂S∕∂Δε    = κ ⋅ I₂ + sf ⋅ ∂mf∕∂Δε ;
+    ∂S∕∂Δp_l  = - 3 ⋅ α ⋅ (b - φ₀) ⋅ S_l + sf ⋅ ∂mf∕∂Δp_l + ∂sf∕∂Δp_l ⋅ mf ;
+
+    ∂w∕∂Δp_l  = - ( ∂ρ_f∕∂Δp_l ⋅ k_eff + ρ_f ⋅ ∂k_eff∕∂S_l ⋅ ∂S_l∕∂Δp_l ) / η_f ⋅ (∇p_l + Δ∇p_l) ;
+    ∂w∕∂ΔT  = -  ∂ρ_f∕∂ΔT ⋅ k_eff  / η_f ⋅ (∇p_l + Δ∇p_l) ;
+    ∂w∕∂Δ∇p_l = - ρ_f ⋅ k_eff / η_f ⋅ tmatrix<N, N, real>::Id();
+
+    ∂j∕∂Δ∇T   = - k_T ⋅ tmatrix<N, N, real>::Id();
+}

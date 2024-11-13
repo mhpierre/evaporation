@@ -1,0 +1,25 @@
+@Parser MaterialLaw;
+@Material Water;
+@Law Entropy;
+@Author Maxime PIERRE;
+@Date 13/01/2023;
+
+@Description
+{
+  Water entropy as a 3rd order polynomial function of temperature and pressure, fitted on the IAWPS curve.
+}
+
+@Input p,T;
+T.setGlossaryName("Temperature");
+p.setGlossaryName("Pressure");
+
+@Output sf;
+
+@PhysicalBounds T in [0:*[;
+                       
+@Function
+{
+  const stress p_ = p * 1.e-6 ;
+  const real T_ = T - 293.15 ;
+  sf = 1000 * ( 1.56e-3 -1.91e-5 * p_ + 1.53e-2 *T_ - 9.65e-7 * p_*p_ -9.9e-6 *p_*T_ -0.00002634 *T_*T_ + 1.972e-8 *p_*p_*T_ + 2.318e-8 *p_*T_*T_ +4.362e-8 *T_*T_*T_ ) ;
+}

@@ -1,0 +1,26 @@
+@Parser MaterialLaw;
+@Material Water;
+@Law Density;
+@Author Maxime PIERRE;
+@Date 13/01/2023;
+
+@Description
+{
+  Water density as a 3rd order polynomial function of temperature and pressure, fitted on the IAWPS curve.
+}
+
+@Input p,T;
+T.setGlossaryName("Temperature");
+p.setGlossaryName("Pressure");
+
+@Output ρ;
+
+@PhysicalBounds T in [0:*[;
+                       
+@Function
+{
+  // const stress p_ = p * 1.e-6 ;
+  // const real T_ = T - 293.15 ;
+  // ρ = 1.0e+3 + 4.87e-1 * p_ - 2.84e-2 * T_ - 3.95e-4 * p_ * p_ - 1.82e-3 * p_ * T_ - 0.004974 * T_ * T_ - 0.000001122 * p_* p_ * T_ + 0.00001615 * p_ * T_* T_ + 0.00001032 * T_ * T_ * T_;
+  ρ = 1e3*(1+p/2e9) ;
+}

@@ -1,0 +1,5 @@
+__pycache__
+*.bp
+include
+src
+.DS_Store

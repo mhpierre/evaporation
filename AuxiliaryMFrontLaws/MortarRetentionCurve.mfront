@@ -1,0 +1,25 @@
+@Parser MaterialLaw;
+@Material Mortar;
+@Law RetentionCurve;
+@Author Maxime PIERRE;
+@Date 20/01/2023;
+
+@Description
+{
+  Water retention curve of mortar from Van Genuchten model.
+}
+
+@Input p, p_0, n, kα;
+p.setGlossaryName("Pressure");
+p_0.setEntryName("AirEntryPressure");
+n.setEntryName("VanGenuchtenExponent");
+kα.setEntryName("HydrationModifier");
+
+@Output S;
+
+@PhysicalBounds p_0 in [0:*[;
+                       
+@Function
+{
+    S = p > 0 ? 1 : pow( 1 + pow( - p / p_0 , n) * exp(-n*kα), (1-n)/n ) ;
+}
